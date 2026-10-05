@@ -293,9 +293,11 @@ function HarnessStatusText({ status }: { status: ReturnType<typeof harnessStatus
     return <span className="text-xs text-green-600 dark:text-green-400">Configured</span>;
   }
   if (status.needsSetup) {
+    // Sentence case to match "Configured"; the picker keeps the shared lowercase badge.
+    const text = harnessWarningBadgeText(status.reason);
     return (
       <span className="text-xs text-amber-600 dark:text-amber-500">
-        {harnessWarningBadgeText(status.reason)}
+        {text.charAt(0).toUpperCase() + text.slice(1)}
       </span>
     );
   }
