@@ -79,15 +79,15 @@ describe("ImportContextModal – harness tabs", () => {
     expect(screen.getByRole("tab", { name: "Claude Code" })).toBe(tabs[0]);
     expect(screen.getByRole("tab", { name: "Codex" })).toBe(tabs[1]);
     expect(screen.getByRole("tab", { name: "Cursor" })).toBe(tabs[2]);
-    expect(screen.getByText("Your imports are ready")).toBeTruthy();
-    expect(screen.getByText(/These carry over automatically\./)).toBeTruthy();
+    expect(screen.getByText("Your setup is ready")).toBeTruthy();
+    expect(screen.getByText(/already set up in your harnesses\./)).toBeTruthy();
   });
 
   it("shows the credential line and read-only asset lists with details", () => {
     renderModal();
 
     expect(screen.getByText("Databricks AI Gateway")).toBeTruthy();
-    expect(screen.getAllByText("Imported")).toHaveLength(1);
+    expect(screen.getAllByText("Detected")).toHaveLength(1);
     expect(assetTabNames()).toEqual(["MCPs 5", "Skills 10", "Plugins 3"]);
 
     expect(rowNames("MCPs")).toEqual(["databricks-v2", "jira", "safe", "web-search", "figma"]);
@@ -124,7 +124,7 @@ describe("ImportContextModal – harness tabs", () => {
 describe("ImportContextModal – host and status", () => {
   it("names the host when given one", () => {
     renderModal(MOCK_IMPORT_CONTEXT, { hostName: "dev-laptop" });
-    expect(screen.getByText(/Found in your harnesses on dev-laptop\./)).toBeTruthy();
+    expect(screen.getByText(/already set up in your harnesses on dev-laptop\./)).toBeTruthy();
   });
 
   it("shows a loading state instead of tabs", () => {
