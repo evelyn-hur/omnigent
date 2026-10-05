@@ -93,9 +93,7 @@ describe("ImportReviewGate", () => {
     );
     renderWithClient(<ImportReviewGate />);
 
-    expect(
-      await screen.findByText(/already set up in your harnesses on fresh-machine\./),
-    ).toBeTruthy();
+    expect(await screen.findByText(/Found in your harnesses on fresh-machine\./)).toBeTruthy();
     expect(screen.getByText("/c")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(screen.queryByText("Your setup is ready")).toBeNull());
@@ -129,7 +127,7 @@ describe("ImportReviewGate with a requested host", () => {
     await client.invalidateQueries({ queryKey: ["hosts"] });
 
     expect(await screen.findByText("/t")).toBeTruthy();
-    expect(screen.getByText(/already set up in your harnesses on target-machine\./)).toBeTruthy();
+    expect(screen.getByText(/Found in your harnesses on target-machine\./)).toBeTruthy();
     expect(screen.queryByText("/o")).toBeNull();
   });
 
@@ -163,9 +161,7 @@ describe("ImportReviewGate with a requested host", () => {
     requestImportReview({ hostId: "target" });
     renderWithClient(<ImportReviewGate />);
 
-    expect(
-      await screen.findByText(/already set up in your harnesses on target-machine\./),
-    ).toBeTruthy();
+    expect(await screen.findByText(/Found in your harnesses on target-machine\./)).toBeTruthy();
   });
 
   it("shows a reviewed target and clears the request on dismiss", async () => {

@@ -355,8 +355,8 @@ function ImportContextBody({
             Your setup is ready
           </DialogTitle>
           <DialogDescription className="max-w-[480px] text-[14px] leading-5">
-            Omnigent uses the MCPs, skills, and plugins already set up in your harnesses
-            {hostName ? ` on ${hostName}` : ""}.
+            {hostName ? `Found in your harnesses on ${hostName}.` : "Found in your harnesses."}{" "}
+            These carry over automatically.
           </DialogDescription>
         </div>
         {content}
