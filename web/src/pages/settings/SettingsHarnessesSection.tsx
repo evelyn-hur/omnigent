@@ -373,11 +373,15 @@ function HarnessCard({
     </>
   );
   const className =
-    "flex flex-col gap-2 rounded-[20px] border border-border bg-card p-4 transition-colors hover:border-foreground/20";
+    "flex flex-col gap-2 rounded-[20px] border border-border bg-card p-4 transition-colors";
   return status.ready ? (
     <Link
       to={`/settings/harnesses/${entry.harness}`}
-      className={className}
+      // Only cards that open a details page get the hover, so it reads as clickable.
+      className={cn(
+        className,
+        "hover:border-foreground/20 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+      )}
       data-testid={`harness-card-${entry.harness}`}
       componentId="settings.harnesses.open"
     >
