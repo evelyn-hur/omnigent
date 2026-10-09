@@ -47,8 +47,8 @@ vi.mock("@/shell/HarnessSetupDialog", () => ({
 
 function renderHarnesses() {
   render(
-    <MemoryRouter initialEntries={["/settings/customize/harnesses"]}>
-      <SettingsCustomizeSection subSection="harnesses" />
+    <MemoryRouter initialEntries={["/settings/customize"]}>
+      <SettingsCustomizeSection />
     </MemoryRouter>,
   );
 }
@@ -135,5 +135,14 @@ describe("Harnesses subsection", () => {
 
     expect(screen.getByText("Codex")).toBeTruthy();
     expect(screen.queryByText("Claude Code")).toBeNull();
+  });
+
+  it("shows skills inline under the harnesses, not behind a separate Skills tab", () => {
+    hosts = [ONLINE];
+    renderHarnesses();
+
+    // Merged design: no Skills sub-nav; skills render on each harness card.
+    expect(screen.queryByTestId("settings-customize-nav-skills")).toBeNull();
+    expect(screen.getAllByTestId("harness-skill-summarization").length).toBeGreaterThan(0);
   });
 });

@@ -1,13 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  type BlocksIcon,
-  ChevronDownIcon,
-  SearchIcon,
-  SparkleIcon,
-  SparklesIcon,
-  TerminalIcon,
-} from "lucide-react";
-import { Link } from "@/lib/routing";
+import { ChevronDownIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,8 +10,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useServerInfo } from "@/lib/CapabilitiesContext";
 import { isFeatureEnabled } from "@/lib/capabilities";
-import type { CustomizeSubSectionId } from "@/shell/settingsNav";
-import { SIDEBAR_ROW } from "@/shell/sidebarStyles";
 import { ComposerAgentIcon } from "@/shell/NewChatDialog";
 import { HarnessSetupDialog } from "@/shell/HarnessSetupDialog";
 import { useHosts, type Host } from "@/hooks/useHosts";
@@ -30,54 +20,21 @@ import {
 } from "@/lib/harnessSetup";
 import { NATIVE_CODING_AGENTS } from "@/lib/nativeCodingAgents";
 
-const SUB_NAV: { id: CustomizeSubSectionId; label: string; icon: typeof BlocksIcon }[] = [
-  { id: "harnesses", label: "Harnesses", icon: TerminalIcon },
-  { id: "skills", label: "Skills", icon: SparklesIcon },
-];
+/**
+ * The Harnesses settings page. Skills are shown inline under each harness
+ * rather than as a separate tab, so this section is a single page with no
+ * sub-navigation.
+ */
+export const SettingsCustomizeSection = () => (
+  <div className="flex min-h-0 flex-1 overflow-hidden">
+    <HarnessesSection />
+  </div>
+);
 
-export const SettingsCustomizeSection = ({ subSection }: { subSection: CustomizeSubSectionId }) => {
-  return (
-    <div className="flex min-h-0 flex-1 overflow-hidden">
-      <nav className="flex w-64 shrink-0 flex-col gap-0 overflow-y-auto border-r border-border px-3 py-3">
-        <h2 className="px-2 py-1 text-sm font-normal text-muted-foreground">Customize</h2>
-        {SUB_NAV.map((item) => {
-          const Icon = item.icon;
-          const selected = subSection === item.id;
-          return (
-            <Button
-              key={item.id}
-              asChild
-              variant="ghost"
-              className={cn(
-                SIDEBAR_ROW,
-                "w-full justify-start border-0 font-normal",
-                selected &&
-                  "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)] hover:bg-[var(--sidebar-active)] hover:text-[var(--sidebar-active-foreground)] dark:hover:bg-[var(--sidebar-active)] dark:hover:text-[var(--sidebar-active-foreground)]",
-              )}
-            >
-              <Link
-                to={`/settings/customize/${item.id}`}
-                data-testid={`settings-customize-nav-${item.id}`}
-                componentId={`settings.customize.nav.${item.id}`}
-                aria-current={selected ? "page" : undefined}
-              >
-                <Icon
-                  className={cn(
-                    "ui-icon",
-                    selected ? "text-[var(--sidebar-active-foreground)]" : "text-muted-foreground",
-                  )}
-                />
-                {item.label}
-              </Link>
-            </Button>
-          );
-        })}
-      </nav>
-      {subSection === "harnesses" && <HarnessesSection />}
-      {subSection === "skills" && <SkillsSection />}
-    </div>
-  );
-};
+interface Skill {
+  name: string;
+  description: string;
+}
 
 interface HarnessEntry {
   /** Native harness slug (e.g. "claude-native") — the readiness/install key. */
@@ -85,7 +42,20 @@ interface HarnessEntry {
   name: string;
   description: string;
   agentName: string;
+  /** Skills surfaced under the harness card. */
+  skills: readonly Skill[];
 }
+
+// Placeholder skills shown under every harness until real per-harness discovery
+// (GET /v1/skills, which needs a host + workspace) is wired up.
+const PLACEHOLDER_SKILLS: readonly Skill[] = [
+  { name: "summarization", description: "Condense long inputs into a short, faithful summary." },
+  {
+    name: "code-generation",
+    description: "Generate code from natural-language prompts across languages and frameworks.",
+  },
+  { name: "research", description: "Gather, cross-reference, and synthesize multiple sources." },
+];
 
 // One-line descriptions per harness, keyed by native slug. The server catalog
 // (/v1/harnesses) carries no descriptions, so these live here; the rest of each
@@ -121,6 +91,7 @@ const HARNESS_ENTRIES: HarnessEntry[] = [...NATIVE_CODING_AGENTS]
     name: spec.displayName,
     agentName: spec.agentName,
     description: HARNESS_DESCRIPTIONS[spec.harness] ?? "",
+    skills: PLACEHOLDER_SKILLS,
   }));
 
 const HarnessesSection = () => {
@@ -336,142 +307,29 @@ function HarnessCard({
         )}
       </div>
       <p className="line-clamp-2 text-ui text-muted-foreground">{entry.description}</p>
+      <HarnessSkills skills={entry.skills} />
     </div>
   );
 }
 
-interface Skill {
-  id: string;
-  name: string;
-  description: string;
-}
-
-// Mock catalog — not wired to real skill data yet.
-// TODO: Add real skill data from the API in subsequent PRs.
-// This feature is WIP behind the `customize` release feature not enabled by default.
-const SKILLS: Skill[] = [
-  {
-    id: "summarization",
-    name: "summarization",
-    description:
-      "This is placeholder text reserved for a skill description. Omnigent-provided defaults will display the description configured in the system. For custom skills, the user provides the description.",
-  },
-  {
-    id: "code-generation",
-    name: "code-generation",
-    description: "Generate code from natural-language prompts across languages and frameworks.",
-  },
-  {
-    id: "data-analysis",
-    name: "data-analysis",
-    description: "Explore datasets, compute summaries, and surface trends from structured data.",
-  },
-  {
-    id: "research",
-    name: "research",
-    description: "Gather, cross-reference, and synthesize information from multiple sources.",
-  },
-  {
-    id: "writing",
-    name: "writing",
-    description: "Draft and refine prose, from short copy to long-form documents.",
-  },
-  {
-    id: "translation",
-    name: "translation",
-    description: "Translate text between languages while preserving tone and meaning.",
-  },
-];
-
-const SkillsSection = () => {
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(SKILLS[0].id);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return SKILLS;
-    return SKILLS.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
-    );
-  }, [query]);
-
-  const selected = SKILLS.find((s) => s.id === selectedId) ?? null;
-
+/** The harness's skills, shown inline on its card (replaces the Skills tab). */
+function HarnessSkills({ skills }: { skills: readonly Skill[] }) {
+  if (skills.length === 0) return null;
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden">
-      <aside
-        className="flex w-56 shrink-0 flex-col overflow-hidden border-r border-border px-3 py-3"
-        aria-label="Skills navigation"
-      >
-        <h2 className="px-2 py-1 text-sm font-normal text-muted-foreground">Skills</h2>
-        <div className="mb-2 mt-2 flex h-8 items-center gap-2 rounded-lg border border-border px-2">
-          <SearchIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            aria-label="Search skills"
-            data-testid="skill-search"
-            className="min-w-0 flex-1 bg-transparent text-ui outline-none placeholder:text-muted-foreground/50"
-          />
-        </div>
-        <nav className="flex flex-col gap-px overflow-y-auto">
-          {filtered.map((skill) => {
-            const isSelected = skill.id === selectedId;
-            return (
-              <button
-                key={skill.id}
-                type="button"
-                onClick={() => setSelectedId(skill.id)}
-                aria-current={isSelected ? "page" : undefined}
-                data-testid={`skill-nav-${skill.id}`}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-ui transition-colors cursor-pointer",
-                  isSelected
-                    ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
-                    : "text-foreground hover:bg-muted",
-                )}
-              >
-                <SparkleIcon
-                  className={cn(
-                    "size-4 shrink-0",
-                    isSelected
-                      ? "text-[var(--sidebar-active-foreground)]"
-                      : "text-muted-foreground",
-                  )}
-                  aria-hidden
-                />
-                <span className="min-w-0 flex-1 truncate">{skill.name}</span>
-              </button>
-            );
-          })}
-          {filtered.length === 0 && (
-            <p className="px-2 py-1 text-ui text-muted-foreground">No skills match “{query}”.</p>
-          )}
-        </nav>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {selected ? (
-          <>
-            <div className="mx-auto w-full max-w-[960px] shrink-0 px-10 pb-6 pt-10">
-              <h1 className="text-2xl tracking-tight">{selected.name}</h1>
-            </div>
-            <div className="min-w-0 flex-1 overflow-y-auto">
-              <div className="mx-auto w-full max-w-[960px] px-10 pb-30">
-                <div className="flex flex-col gap-1">
-                  <span className="text-ui text-muted-foreground">Description</span>
-                  <p className="text-ui text-foreground">{selected.description}</p>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="mx-auto w-full max-w-[960px] px-10 pt-10 text-ui text-muted-foreground">
-            Select a skill to see its details.
-          </div>
-        )}
+    <div className="mt-1 flex flex-col gap-1.5 border-t border-border pt-3">
+      <span className="text-xs font-medium text-muted-foreground">Skills</span>
+      <div className="flex flex-wrap gap-1.5">
+        {skills.map((skill) => (
+          <span
+            key={skill.name}
+            title={skill.description}
+            data-testid={`harness-skill-${skill.name}`}
+            className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {skill.name}
+          </span>
+        ))}
       </div>
     </div>
   );
-};
+}

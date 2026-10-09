@@ -284,7 +284,7 @@ export function SettingsPage() {
   // A login session exists (accounts OR OIDC) when the server advertises a
   // login_url; gates the Account section so SSO users get it too.
   const hasAuthSession = info !== "loading" && info.login_url !== null;
-  const { section, subSection } = useSettingsRoute();
+  const { section } = useSettingsRoute();
   // Per-section page view: `settings.appearance`, `settings.account`, etc. The
   // hook re-keys on pathname, so switching sections re-fires under the new id.
   // `section` is a closed SettingsSectionId union (no PII / unbounded values).
@@ -311,11 +311,10 @@ export function SettingsPage() {
     );
   }
 
-  // Nested sections own their own layout. useSettingsRoute only sets
-  // subSection for a valid, feature-enabled customize route, so no extra
-  // flag check is needed here.
-  if (section === "customize" && subSection) {
-    return <SettingsCustomizeSection subSection={subSection} />;
+  // The Harnesses page owns its own full-height, headerless layout, so it
+  // renders outside the shared section PageScroll below.
+  if (section === "customize") {
+    return <SettingsCustomizeSection />;
   }
 
   return (

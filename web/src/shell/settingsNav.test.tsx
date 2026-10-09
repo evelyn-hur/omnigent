@@ -151,6 +151,28 @@ describe("settingsNavGroups", () => {
     expect(item(false)).toBeUndefined();
     expect(item(true)).toMatchObject({ id: "integrations", label: "Sandbox Integrations" });
   });
+
+  it("groups Harnesses and Import sessions under Preferences, right below General", () => {
+    // 6th arg is customizeEnabled. The harness entry reads "Harnesses" but keeps
+    // its `customize` id/route; Import sessions always rides alongside it.
+    const groups = settingsNavGroups(false, false, false, false, false, true);
+    const titles = groups.map((g) => g.title);
+    expect(titles.indexOf("Preferences")).toBe(titles.indexOf("General") + 1);
+    const preferences = groups.find((g) => g.title === "Preferences");
+    expect(preferences?.items.map((i) => i.id)).toEqual(["customize", "import"]);
+    expect(preferences?.items[0]).toMatchObject({ id: "customize", label: "Harnesses" });
+    // The entries moved out of General.
+    const general = groups.find((g) => g.title === "General");
+    expect(general?.items.map((i) => i.id)).not.toContain("customize");
+    expect(general?.items.map((i) => i.id)).not.toContain("import");
+  });
+
+  it("keeps only Import sessions under Preferences when the customize feature is off", () => {
+    const preferences = settingsNavGroups(false, false, false, false, false, false).find(
+      (g) => g.title === "Preferences",
+    );
+    expect(preferences?.items.map((i) => i.id)).toEqual(["import"]);
+  });
 });
 
 describe("SettingsSidebarBody", () => {
@@ -398,36 +420,26 @@ describe("useSettingsRoute", () => {
     expect(routeHook("/inbox").inSettings).toBe(false);
   });
 
-  it("parses the customize sub-section and defaults a bare/unknown one to the first", () => {
+  it("resolves the customize (Harnesses) section with no sub-sections", () => {
+    // Skills moved inline under each harness, so customize is a single page —
+    // any trailing path segment is ignored, not parsed into a sub-section.
+    expect(routeHook("/settings/customize")).toEqual({ inSettings: true, section: "customize" });
     expect(routeHook("/settings/customize/harnesses")).toEqual({
       inSettings: true,
       section: "customize",
-      subSection: "harnesses",
     });
-    expect(routeHook("/settings/customize/skills")).toEqual({
+    expect(routeHook("/settings/customize/anything")).toEqual({
       inSettings: true,
       section: "customize",
-      subSection: "skills",
-    });
-    // Bare or unknown sub-section falls back to the first sub-section.
-    expect(routeHook("/settings/customize")).toEqual({
-      inSettings: true,
-      section: "customize",
-      subSection: "harnesses",
-    });
-    expect(routeHook("/settings/customize/nope")).toEqual({
-      inSettings: true,
-      section: "customize",
-      subSection: "harnesses",
     });
   });
 
   it("falls back to General for a customize deep link when the feature is disabled", () => {
     mocks.customizeEnabled = false;
     // Disabled (the default deploy) → the section resolves to General instead
-    // of an empty customize page, and no subSection is set.
+    // of an empty customize page.
     expect(routeHook("/settings/customize")).toEqual({ inSettings: true, section: "general" });
-    expect(routeHook("/settings/customize/skills")).toEqual({
+    expect(routeHook("/settings/customize/anything")).toEqual({
       inSettings: true,
       section: "general",
     });
