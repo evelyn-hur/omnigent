@@ -187,14 +187,11 @@ export function markWorkspaceFileLinks() {
 }
 
 /**
- * Percent-decodes the path part of a file link into the filename it names.
- *
- * The raw text is kept when it isn't valid percent-encoding (a lone `%` is a
- * legal filename character), so a malformed sequence never drops the link. It
- * is also kept when decoding would create citation syntax: `report.md%23L12`
- * names a file, but the opener re-splits the stored path and would read the
- * decoded `report.md#L12` as `report.md` at line 12. Such a name stays encoded
- * and fails the filename lookup, as before, rather than opening a sibling.
+ * Decodes the filename unless decoding fails or creates citation syntax. A
+ * lone `%` is a legal filename character, so a malformed sequence keeps the raw
+ * text rather than dropping the link. The opener re-parses citations, so an
+ * ambiguous name (`report.md%23L12`) must stay encoded to avoid opening a
+ * sibling file.
  */
 function decodeFilePath(path: string): string {
   let decoded: string;
