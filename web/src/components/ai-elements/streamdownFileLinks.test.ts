@@ -5,7 +5,11 @@
 // FileViewer renderer and which are still left to harden untouched.
 
 import { describe, expect, it } from "vitest";
-import { markWorkspaceFileLinks, WORKSPACE_FILE_LINK_ATTR } from "./streamdown-security";
+import {
+  markWorkspaceFileLinks,
+  rewriteFileUriLinks,
+  WORKSPACE_FILE_LINK_ATTR,
+} from "./streamdown-security";
 
 interface TestNode {
   type: string;
@@ -25,6 +29,18 @@ function markHref(href: string): Record<string, unknown> {
     type: "root",
     children: [{ type: "element", tagName: "p", children: [node] }],
   };
+  markWorkspaceFileLinks()(tree);
+  return node.properties ?? {};
+}
+
+/** Runs the file-URI rewrite and then the marking pass, in their configured order. */
+function rewriteThenMarkHref(href: string): Record<string, unknown> {
+  const node = anchor(href);
+  const tree: TestNode = {
+    type: "root",
+    children: [{ type: "element", tagName: "p", children: [node] }],
+  };
+  rewriteFileUriLinks()(tree);
   markWorkspaceFileLinks()(tree);
   return node.properties ?? {};
 }
@@ -92,6 +108,26 @@ describe("markWorkspaceFileLinks", () => {
     // A lone `%` is a legal filename character but invalid percent-encoding;
     // decodeURIComponent throws on it, so the raw href is kept.
     expectHandedOver(markHref("docs/50%-done.md"), "docs/50%-done.md");
+  });
+
+  describe("after rewriteFileUriLinks", () => {
+    it("decodes a file: URI exactly once, so a literal-percent filename survives", () => {
+      // `rewriteFileUriLinks` runs first in the configured plugin order. A file
+      // literally named `report%20final.md` is linked as `report%2520final.md`;
+      // decoding in both passes would open `report final.md` instead.
+      expectHandedOver(
+        rewriteThenMarkHref("file:///ws/report%2520final.md"),
+        "/ws/report%20final.md",
+      );
+    });
+
+    it("decodes a file: URI with spaces once and keeps its line fragment", () => {
+      expectHandedOver(rewriteThenMarkHref("file:///ws/My%20Notes.md#L12"), "/ws/My Notes.md#L12");
+    });
+
+    it("decodes a basename citation once after its colon suffix is rewritten", () => {
+      expectHandedOver(rewriteThenMarkHref("My%20Notes.md:12"), "My Notes.md#L12");
+    });
   });
 
   it.each([

@@ -112,7 +112,14 @@ export function rewriteFileUriLinks() {
   };
 }
 
-/** Returns a local absolute path only when rewriting preserves href meaning. */
+/**
+ * Returns a local absolute path only when rewriting preserves href meaning.
+ *
+ * The path is returned still percent-encoded, exactly as any other markdown
+ * destination arrives, so that {@link markWorkspaceFileLinks} decodes every
+ * file link once. Decoding here as well would turn a file literally named
+ * `report%20final.md` (linked as `report%2520final.md`) into `report final.md`.
+ */
 function fileUriToLocalPath(href: string): string | null {
   let url: URL;
   try {
@@ -121,6 +128,7 @@ function fileUriToLocalPath(href: string): string | null {
     return null;
   }
   if (url.protocol !== "file:" || url.hostname || url.search) return null;
+  // Validate the decoded form: that is the path the FileViewer will open.
   let path: string;
   try {
     path = decodeURIComponent(url.pathname);
@@ -131,9 +139,9 @@ function fileUriToLocalPath(href: string): string | null {
   if (!path.startsWith("/") || path.startsWith("//") || path === "/" || /[?#]/.test(path)) {
     return null;
   }
-  if (!url.hash) return path;
+  if (!url.hash) return url.pathname;
   const cited = splitWorkspaceFileCitation(`${path}${url.hash}`);
-  return cited.hasPosition ? `${path}${url.hash}` : null;
+  return cited.hasPosition ? `${url.pathname}${url.hash}` : null;
 }
 
 /**
@@ -154,10 +162,9 @@ function fileUriToLocalPath(href: string): string | null {
  * a `mailto:`/`javascript:` scheme, or anything carrying a query or fragment
  * is left for harden to judge exactly as before.
  *
- * The href is a markdown link destination, so its path is percent-encoded (a
- * file named `My Notes.md` arrives as `My%20Notes.md`). It is decoded before
- * being stored, because every consumer uses it as a filesystem path — an
- * encoded one never matches the real file and the link reads as broken.
+ * This pass owns percent-decoding: the stored path is decoded exactly once,
+ * here, whether the href came straight from markdown (`My%20Notes.md`) or was
+ * handed over still encoded by {@link rewriteFileUriLinks}.
  */
 export function markWorkspaceFileLinks() {
   return (tree: HastElement) => {
