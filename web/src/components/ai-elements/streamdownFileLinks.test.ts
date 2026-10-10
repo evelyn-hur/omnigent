@@ -102,6 +102,17 @@ describe("markWorkspaceFileLinks", () => {
 
   it("decodes a percent-encoded path while preserving its line fragment", () => {
     expectHandedOver(markHref("docs/My%20Notes.md#L12"), "docs/My Notes.md#L12");
+    expectHandedOver(markHref("docs/My%20Notes.md:12:7"), "docs/My Notes.md:12:7");
+  });
+
+  it.each([
+    ["docs/report.md%23L12", "encoded # would read as a line fragment"],
+    ["docs/report.md%3A12", "encoded : would read as a line number"],
+  ])("keeps %s encoded rather than decoding it into a citation (%s)", (href) => {
+    // The opener re-splits the stored path, so a decoded `report.md#L12` would
+    // open `report.md` at line 12 — a different file. Left encoded, the
+    // literal filename fails its lookup exactly as it did before.
+    expectHandedOver(markHref(href), href);
   });
 
   it("keeps a malformed-encoding href rather than dropping the link", () => {

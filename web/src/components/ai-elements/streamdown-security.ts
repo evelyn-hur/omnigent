@@ -164,7 +164,9 @@ function fileUriToLocalPath(href: string): string | null {
  *
  * This pass owns percent-decoding: the stored path is decoded exactly once,
  * here, whether the href came straight from markdown (`My%20Notes.md`) or was
- * handed over still encoded by {@link rewriteFileUriLinks}.
+ * handed over still encoded by {@link rewriteFileUriLinks}. The citation
+ * suffix is split off first and only the filename is decoded, so an encoded
+ * delimiter in a filename is never read back as a line citation.
  */
 export function markWorkspaceFileLinks() {
   return (tree: HastElement) => {
@@ -178,23 +180,30 @@ export function markWorkspaceFileLinks() {
       node.properties = {
         ...node.properties,
         href: PARKED_FILE_HREF,
-        [WORKSPACE_FILE_LINK_ATTR]: decodeFileHref(href),
+        [WORKSPACE_FILE_LINK_ATTR]: decodeFilePath(cited.path) + href.slice(cited.path.length),
       };
     });
   };
 }
 
 /**
- * Percent-decodes a file link's href into the path it names. Falls back to the
- * raw href when it isn't valid percent-encoding (e.g. a lone `%`, itself a
- * legal filename character), so a malformed sequence never drops the link.
+ * Percent-decodes the path part of a file link into the filename it names.
+ *
+ * The raw text is kept when it isn't valid percent-encoding (a lone `%` is a
+ * legal filename character), so a malformed sequence never drops the link. It
+ * is also kept when decoding would create citation syntax: `report.md%23L12`
+ * names a file, but the opener re-splits the stored path and would read the
+ * decoded `report.md#L12` as `report.md` at line 12. Such a name stays encoded
+ * and fails the filename lookup, as before, rather than opening a sibling.
  */
-function decodeFileHref(href: string): string {
+function decodeFilePath(path: string): string {
+  let decoded: string;
   try {
-    return decodeURIComponent(href);
+    decoded = decodeURIComponent(path);
   } catch {
-    return href;
+    return path;
   }
+  return splitWorkspaceFileCitation(decoded).hasPosition ? path : decoded;
 }
 
 function visitElements(node: HastElement, visitor: (node: HastElement) => void): void {
